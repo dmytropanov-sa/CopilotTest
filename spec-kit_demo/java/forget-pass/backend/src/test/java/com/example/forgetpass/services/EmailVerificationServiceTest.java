@@ -93,13 +93,49 @@ class EmailVerificationServiceTest {
     }
 
     @Test
-    void latestToken_returnsMostRecent() {
-        List<EmailVerificationToken> list = new ArrayList<>();
-        EmailVerificationToken a = new EmailVerificationToken(); a.setPatient(patient); a.setCreatedAt(Instant.now().minus(Duration.ofHours(3)));
-        EmailVerificationToken b = new EmailVerificationToken(); b.setPatient(patient); b.setCreatedAt(Instant.now().minus(Duration.ofHours(1)));
-        list.add(a); list.add(b);
-        when(tokenRepository.findByPatient(patient)).thenReturn(list);
-        assertThat(service.latestToken(patient)).isPresent();
-        assertThat(service.latestToken(patient).get()).isEqualTo(b);
+    void verify_returnsFalse_whenTokenExpired() {
+        String token = "tok-expired";
+        String hash = TokenUtil.sha256(token);
+        EmailVerificationToken evt = new EmailVerificationToken();
+        evt.setPatient(patient);
+        evt.setExpiresAt(Instant.now().minus(Duration.ofHours(1))); // expired
+        when(tokenRepository.findByTokenHash(hash)).thenReturn(Optional.of(evt));
+
+        boolean ok = service.verify(token);
+        assertThat(ok).isFalse();
+        verify(tokenRepository, never()).save(evt);
+        verify(patientRepository, never()).save(patient);
+    }
+
+    @Test
+    void verify_returnsFalse_whenAlreadyVerified() {
+        String token = "tok-verified";
+        String hash = TokenUtil.sha256(token);
+        EmailVerificationToken evt = new EmailVerificationToken();
+        evt.setPatient(patient);
+        evt.setExpiresAt(Instant.now().plus(Duration.ofHours(2)));
+        evt.setVerifiedAt(Instant.now().minus(Duration.ofHours(1))); // already verified
+        when(tokenRepository.findByTokenHash(hash)).thenReturn(Optional.of(evt));
+
+        boolean ok = service.verify(token);
+        assertThat(ok).isFalse();
+        verify(tokenRepository, never()).save(evt);
+        verify(patientRepository, never()).save(patient);
+    }
+
+    @Test
+    void resend_returnsFalse_whenEmailNotFound() {
+        when(patientRepository.findByEmail("unknown@example.com")).thenReturn(Optional.empty());
+
+        boolean sent = service.resend("unknown@example.com", "https://app.local");
+        assertThat(sent).isFalse();
+        verifyNoInteractions(tokenRepository);
+        verifyNoInteractions(emailService);
+    }
+
+    @Test
+    void latestToken_returnsEmpty_whenNoTokens() {
+        when(tokenRepository.findByPatient(patient)).thenReturn(List.of());
+        assertThat(service.latestToken(patient)).isEmpty();
     }
 }

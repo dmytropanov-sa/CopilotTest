@@ -9,7 +9,7 @@
     <version>0.1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>forget-pass</name>
-    <description>Patient Registration & Password Recovery - Multi-module</description>
+    <description>Patient Registration &amp; Password Recovery - Multi-module</description>
 
     <modules>
         <module>backend</module>
