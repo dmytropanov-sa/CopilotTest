@@ -1,0 +1,35 @@
+# Project-level ignores
+
+# Backend build outputs
+backend/target/
+backend/.mvn/
+
+# Maven / Java artifacts
+**/target/
+*.class
+*.jar
+*.war
+*.ear
+*.exec
+
+# Test reports
+**/surefire-reports/
+**/failsafe-reports/
+
+# IDE/editor
+.vscode/
+.idea/
+*.iml
+
+# Node/Frontend (if present)
+frontend/node_modules/
+frontend/dist/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Env & logs
+.env
+*.log
+logs/
