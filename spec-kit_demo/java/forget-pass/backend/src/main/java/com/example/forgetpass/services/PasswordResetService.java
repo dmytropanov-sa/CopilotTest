@@ -113,7 +113,26 @@ public class PasswordResetService {
             return false;
         }
         PatientCredential cred = credOpt.get();
-        cred.setPasswordHash(passwordEncoder.encode(newPassword));
+        // Prevent reuse of last 5 passwords
+        String newHashCandidate = passwordEncoder.encode(newPassword);
+        // Compare raw password by matching with stored hashes
+        for (String prevHash : cred.getPreviousPasswordHashes()) {
+            if (passwordEncoder.matches(newPassword, prevHash)) {
+                auditService.log("password_reset_confirm", patient, null, null, false,
+                    java.util.Map.of("reason", "password_reuse"));
+                throw new IllegalArgumentException("weak_password_or_reuse");
+            }
+        }
+        // Also ensure not equal to current hash
+        if (passwordEncoder.matches(newPassword, cred.getPasswordHash())) {
+            auditService.log("password_reset_confirm", patient, null, null, false,
+                java.util.Map.of("reason", "password_reuse_current"));
+            throw new IllegalArgumentException("weak_password_or_reuse");
+        }
+
+        // Save previous current hash into history and set new password
+        cred.pushPreviousPasswordHash(cred.getPasswordHash(), 5);
+        cred.setPasswordHash(newHashCandidate);
         cred.setPasswordChangedAt(Instant.now());
         credentialRepository.save(cred);
 
