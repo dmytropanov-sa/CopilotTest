@@ -23,7 +23,6 @@
     "jasmine-spec-reporter": "~7.0.0",
     "typescript": "~5.9.3",
     "puppeteer": "^21.8.1",
-    "lcov-to-cobertura-xml": "^1.0.0",
     "@tailwindcss/forms": "^0.5.7",
     "autoprefixer": "^10.4.19",
     "postcss": "^8.4.31",
@@ -40,8 +39,5 @@
     "tslib": "^2.8.1",
     "zone.js": "^0.15.1"
   }
-  ,
-  "scripts": {
-    "convert-coverage": "npx lcov-to-cobertura-xml coverage/lcov.info -o coverage/cobertura-coverage.xml || true"
-  }
+ 
 }

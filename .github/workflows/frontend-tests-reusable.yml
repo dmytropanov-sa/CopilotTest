@@ -52,10 +52,35 @@ jobs:
             spec-kit_demo/java/forget-pass/frontend/coverage
             spec-kit_demo/java/forget-pass/frontend/coverage/lcov.info
 
-      - name: Convert lcov to Cobertura XML
+      - name: Convert lcov to Cobertura XML (inline)
+        if: always()
         run: |
           cd spec-kit_demo/java/forget-pass/frontend || exit 0
-          npm run convert-coverage || true
+          if [ ! -f coverage/lcov.info ]; then echo "No lcov.info found, skipping conversion"; exit 0; fi
+          npx --yes lcov-parse@1.0.0 xmlbuilder@15.0.0 -y >/dev/null 2>&1 || true
+          node -e "
+            const fs=require('fs');
+            const lcovParse=require('lcov-parse');
+            const builder=require('xmlbuilder');
+            lcovParse('coverage/lcov.info', function(err, data){
+              if(err){ console.error(err); process.exit(0); }
+              const xml=builder.create('coverage',{encoding:'utf-8'});
+              xml.att('version','1');
+              const packages=xml.ele('packages');
+              data.forEach(file=>{
+                const pkg=packages.ele('package',{name:file.file||'unknown'});
+                const classes=pkg.ele('classes');
+                const cls=classes.ele('class',{name:file.file,filename:file.file});
+                const lines=cls.ele('lines');
+                (file.lines&&file.lines.details||[]).forEach(ld=>{
+                  lines.ele('line',{number:ld.line, hits:ld.hit});
+                });
+              });
+              fs.mkdirSync('coverage',{recursive:true});
+              fs.writeFileSync('coverage/cobertura-coverage.xml',xml.end({pretty:true}));
+              console.log('Wrote coverage/cobertura-coverage.xml');
+            });
+          "
 
       - name: Upload Cobertura XML
         uses: actions/upload-artifact@v4
