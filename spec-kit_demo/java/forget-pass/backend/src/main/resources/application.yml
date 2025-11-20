@@ -35,3 +35,8 @@ logging:
 app:
   security:
     bcrypt-strength: 12
+
+forgetpass:
+  # Cron expression for token cleanup job. Defaults to daily at 03:00.
+  cleanup:
+    cron: "0 0 3 * * *"

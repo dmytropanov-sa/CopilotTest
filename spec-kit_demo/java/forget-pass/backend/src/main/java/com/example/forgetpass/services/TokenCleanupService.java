@@ -7,6 +7,7 @@ import com.example.forgetpass.repositories.PasswordResetTokenRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -19,14 +20,18 @@ public class TokenCleanupService {
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final EmailVerificationTokenRepository emailVerificationTokenRepository;
 
+    private final String cleanupCron;
+
     public TokenCleanupService(PasswordResetTokenRepository passwordResetTokenRepository,
-                               EmailVerificationTokenRepository emailVerificationTokenRepository) {
+                               EmailVerificationTokenRepository emailVerificationTokenRepository,
+                               @Value("${forgetpass.cleanup.cron:0 0 3 * * *}") String cleanupCron) {
         this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.emailVerificationTokenRepository = emailVerificationTokenRepository;
+        this.cleanupCron = cleanupCron;
     }
 
-    // Run once a day at 03:00
-    @Scheduled(cron = "0 0 3 * * *")
+    // Run once a day at 03:00 by default, can be configured via `forgetpass.cleanup.cron`
+    @Scheduled(cron = "${forgetpass.cleanup.cron:0 0 3 * * *}")
     public void cleanupExpiredAndUsedTokens() {
         Instant now = Instant.now();
 
@@ -51,5 +56,9 @@ public class TokenCleanupService {
             }
         }
         log.info("TokenCleanupService: removed {} email verification tokens", removedEvt);
+    }
+
+    public String getCleanupCron() {
+        return cleanupCron;
     }
 }
