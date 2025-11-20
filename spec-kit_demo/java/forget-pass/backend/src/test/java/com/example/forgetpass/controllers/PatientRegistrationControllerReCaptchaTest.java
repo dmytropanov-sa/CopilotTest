@@ -1,7 +1,6 @@
 package com.example.forgetpass.controllers;
 
 import com.example.forgetpass.services.AuditService;
-import com.example.forgetpass.services.EmailVerificationService;
 import com.example.forgetpass.services.PatientRegistrationService;
 import com.example.forgetpass.services.ReCaptchaService;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,18 +18,16 @@ class PatientRegistrationControllerReCaptchaTest {
 
     MockMvc mockMvc;
     PatientRegistrationService registrationService;
-    EmailVerificationService emailVerificationService;
     AuditService auditService;
     ReCaptchaService reCaptchaService;
 
     @BeforeEach
     void setup() {
         registrationService = mock(PatientRegistrationService.class);
-        emailVerificationService = mock(EmailVerificationService.class);
         auditService = mock(AuditService.class);
         reCaptchaService = mock(ReCaptchaService.class);
 
-        PatientRegistrationController controller = new PatientRegistrationController(registrationService, emailVerificationService, auditService, reCaptchaService);
+        PatientRegistrationController controller = new PatientRegistrationController(registrationService, auditService, reCaptchaService);
 
         mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
     }

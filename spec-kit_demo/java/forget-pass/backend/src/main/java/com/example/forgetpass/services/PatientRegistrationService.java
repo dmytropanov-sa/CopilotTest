@@ -19,17 +19,23 @@ public class PatientRegistrationService {
     private final PasswordEncoder passwordEncoder;
     private final EmailValidationService emailValidationService;
     private final PasswordValidationService passwordValidationService;
+    private final EmailVerificationService emailVerificationService;
+    private final AuditService auditService;
 
     public PatientRegistrationService(PatientRepository patientRepository,
                                       PatientCredentialRepository credentialRepository,
                                       PasswordEncoder passwordEncoder,
                                       EmailValidationService emailValidationService,
-                                      PasswordValidationService passwordValidationService) {
+                                      PasswordValidationService passwordValidationService,
+                                      EmailVerificationService emailVerificationService,
+                                      AuditService auditService) {
         this.patientRepository = patientRepository;
         this.credentialRepository = credentialRepository;
         this.passwordEncoder = passwordEncoder;
         this.emailValidationService = emailValidationService;
         this.passwordValidationService = passwordValidationService;
+        this.emailVerificationService = emailVerificationService;
+        this.auditService = auditService;
     }
 
     @Transactional
@@ -60,6 +66,20 @@ public class PatientRegistrationService {
         cred.setPasswordHash(passwordEncoder.encode(rawPassword));
         credentialRepository.save(cred);
 
+        return saved;
+    }
+
+    @Transactional
+    public Patient registerAndIssueVerification(String firstName, String lastName, String email, String phone, LocalDate dob, String rawPassword, String baseUrl) {
+        Patient saved = register(firstName, lastName, email, phone, dob, rawPassword);
+        // Issue verification email and audit the registration
+        try {
+            emailVerificationService.issueVerification(saved, baseUrl);
+            auditService.log("registration", saved, null, null, true, java.util.Map.of("email", saved.getEmail()));
+        } catch (Exception ex) {
+            // Do not fail registration on email issues; log and proceed
+            auditService.log("registration", saved, null, null, false, java.util.Map.of("reason", "email_issue", "error", ex.getMessage()));
+        }
         return saved;
     }
 

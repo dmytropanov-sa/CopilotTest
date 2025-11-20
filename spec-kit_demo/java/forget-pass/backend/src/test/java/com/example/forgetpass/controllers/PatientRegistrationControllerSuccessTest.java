@@ -2,7 +2,6 @@ package com.example.forgetpass.controllers;
 
 import com.example.forgetpass.domain.Patient;
 import com.example.forgetpass.services.AuditService;
-import com.example.forgetpass.services.EmailVerificationService;
 import com.example.forgetpass.services.PatientRegistrationService;
 import com.example.forgetpass.services.ReCaptchaService;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,18 +23,16 @@ class PatientRegistrationControllerSuccessTest {
 
     MockMvc mockMvc;
     PatientRegistrationService registrationService;
-    EmailVerificationService emailVerificationService;
     AuditService auditService;
     ReCaptchaService reCaptchaService;
 
     @BeforeEach
     void setup() {
         registrationService = mock(PatientRegistrationService.class);
-        emailVerificationService = mock(EmailVerificationService.class);
         auditService = mock(AuditService.class);
         reCaptchaService = mock(ReCaptchaService.class);
 
-        PatientRegistrationController controller = new PatientRegistrationController(registrationService, emailVerificationService, auditService, reCaptchaService);
+        PatientRegistrationController controller = new PatientRegistrationController(registrationService, auditService, reCaptchaService);
         mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
     }
 
@@ -46,8 +43,8 @@ class PatientRegistrationControllerSuccessTest {
         Patient p = new Patient();
         p.setPatientId(java.util.UUID.randomUUID());
         p.setEmail("success@example.com");
-        when(registrationService.register(anyString(), anyString(), eq("success@example.com"), anyString(), any(LocalDate.class), anyString()))
-                .thenReturn(p);
+        when(registrationService.registerAndIssueVerification(anyString(), anyString(), eq("success@example.com"), anyString(), any(LocalDate.class), anyString(), anyString()))
+            .thenReturn(p);
 
         String body = "{\n" +
             "  \"firstName\": \"Alice\",\n" +
@@ -64,7 +61,7 @@ class PatientRegistrationControllerSuccessTest {
             .content(body))
             .andExpect(status().isCreated());
 
-        verify(emailVerificationService, times(1)).issueVerification(eq(p), anyString());
+        verify(registrationService, times(1)).registerAndIssueVerification(anyString(), anyString(), eq("success@example.com"), anyString(), any(LocalDate.class), anyString(), anyString());
         verify(auditService, atLeastOnce()).log(eq("registration"), eq(p), nullable(String.class), nullable(String.class), eq(true), any());
     }
 }

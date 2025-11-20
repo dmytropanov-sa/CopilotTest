@@ -2,7 +2,6 @@ package com.example.forgetpass.controllers;
 
 import com.example.forgetpass.domain.Patient;
 import com.example.forgetpass.services.PatientRegistrationService;
-import com.example.forgetpass.services.EmailVerificationService;
 import com.example.forgetpass.services.AuditService;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -20,16 +19,13 @@ import java.util.Map;
 public class PatientRegistrationController {
 
     private final PatientRegistrationService registrationService;
-    private final EmailVerificationService emailVerificationService;
     private final AuditService auditService;
     private final com.example.forgetpass.services.ReCaptchaService reCaptchaService;
 
     public PatientRegistrationController(PatientRegistrationService registrationService,
-                                         EmailVerificationService emailVerificationService,
                                          AuditService auditService,
                                          com.example.forgetpass.services.ReCaptchaService reCaptchaService) {
         this.registrationService = registrationService;
-        this.emailVerificationService = emailVerificationService;
         this.auditService = auditService;
         this.reCaptchaService = reCaptchaService;
     }
@@ -53,23 +49,24 @@ public class PatientRegistrationController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", "reCAPTCHA validation failed"));
         }
         try {
-            Patient p = registrationService.register(
-                req.firstName(), req.lastName(), req.email(), req.phoneNumber(), req.dateOfBirth(), req.password()
-            );
-            // Issue verification email with 24h token
             String baseUrl;
             try {
                 baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
             } catch (IllegalStateException ex) {
                 baseUrl = "http://localhost:8080";
             }
-            emailVerificationService.issueVerification(p, baseUrl);
-            auditService.log("registration", p, xff, ua, true,
-                java.util.Map.of("email", p.getEmail()));
+            Patient p = registrationService.registerAndIssueVerification(
+                req.firstName(), req.lastName(), req.email(), req.phoneNumber(), req.dateOfBirth(), req.password(), baseUrl
+            );
             java.util.Map<String,Object> body = new java.util.HashMap<>();
             body.put("patientId", p.getPatientId());
             body.put("email", p.getEmail());
             body.put("status", p.getAccountStatus());
+            // Audit successful registration
+            try {
+                auditService.log("registration", p, xff, ua, true, java.util.Map.of("message", "registration_success"));
+            } catch (Exception ignored) {
+            }
             return ResponseEntity.status(HttpStatus.CREATED).body(body);
         } catch (IllegalStateException e) {
             if ("email_already_exists".equals(e.getMessage())) {
