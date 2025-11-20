@@ -1,8 +1,10 @@
 import { Component, Input } from '@angular/core'
+import { CommonModule } from '@angular/common'
 
 @Component({
   selector: 'app-password-strength-indicator',
   standalone: true,
+  imports: [CommonModule],
   template: `
     <div aria-live="polite" class="mt-2 text-sm">
       <div *ngIf="score === 0" class="text-red-600">Too weak</div>
@@ -14,4 +16,14 @@ import { Component, Input } from '@angular/core'
 })
 export class PasswordStrengthIndicatorComponent {
   @Input() score = 0
+
+  get label(){
+    switch(this.score){
+      case 0: return 'Too weak'
+      case 1: return 'Weak'
+      case 2: return 'Medium'
+      case 3: return 'Strong'
+      default: return 'Unknown'
+    }
+  }
 }
