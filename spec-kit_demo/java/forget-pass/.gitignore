@@ -24,6 +24,8 @@ backend/.mvn/
 # Node/Frontend (if present)
 frontend/node_modules/
 frontend/dist/
+frontend/.angular/
+frontend/*test*.txt
 
 # OS files
 .DS_Store
