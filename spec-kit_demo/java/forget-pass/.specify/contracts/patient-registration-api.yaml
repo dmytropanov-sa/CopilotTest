@@ -1,0 +1,674 @@
+openapi: 3.0.3
+info:
+  title: Patient Registration & Password Recovery API
+  version: 1.0.0
+  description: |
+    REST API for patient authentication and account management in healthcare systems.
+    This API provides secure patient registration, email verification, and password recovery functionality.
+
+    ## Security Features
+    - Rate limiting (5 requests/minute per IP)
+    - reCAPTCHA v3 bot protection
+    - Account lockout after 5 failed attempts
+    - Password strength validation
+    - Email verification required
+    - Audit logging for all authentication events
+
+    ## Compliance
+    - HIPAA compliant email handling
+    - GDPR data protection
+    - OWASP security guidelines
+    - 12-factor app principles
+
+  contact:
+    name: Healthcare Platform Team
+    email: dev@healthcare-platform.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local development server
+  - url: https://api.healthcare-platform.com/v1
+    description: Production server
+
+security:
+  - bearerAuth: []
+
+paths:
+  /patients/register:
+    post:
+      summary: Register a new patient account
+      description: |
+        Creates a new patient account with email verification required.
+        The account remains in 'pending_verification' status until email is confirmed.
+      operationId: registerPatient
+      tags:
+        - Patient Registration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatientRegistrationRequest'
+            example:
+              firstName: "John"
+              lastName: "Doe"
+              email: "john.doe@example.com"
+              phoneNumber: "+1234567890"
+              dateOfBirth: "1990-01-01"
+              password: "SecurePass123!"
+              recaptchaToken: "recaptcha_response_token"
+      responses:
+        '201':
+          description: Patient registered successfully, verification email sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientRegistrationResponse'
+        '400':
+          description: Invalid request data or validation errors
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /patients/verify-email:
+    post:
+      summary: Verify patient email address
+      description: Confirms email ownership using verification token sent via email
+      operationId: verifyPatientEmail
+      tags:
+        - Patient Registration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailVerificationRequest'
+      responses:
+        '200':
+          description: Email verified successfully, account activated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid or expired verification token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /patients/password-reset/request:
+    post:
+      summary: Request password reset
+      description: Initiates password reset process by sending reset link to patient's email
+      operationId: requestPasswordReset
+      tags:
+        - Password Recovery
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+      responses:
+        '200':
+          description: Password reset email sent (always returns 200 for security)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /patients/password-reset/confirm:
+    post:
+      summary: Confirm password reset
+      description: Completes password reset using token from email and new password
+      operationId: confirmPasswordReset
+      tags:
+        - Password Recovery
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmation'
+      responses:
+        '200':
+          description: Password reset successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid token or password validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /patients/validate/password:
+    post:
+      summary: Validate password strength
+      description: Checks password against security requirements without storing it
+      operationId: validatePassword
+      tags:
+        - Validation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordValidationRequest'
+      responses:
+        '200':
+          description: Password validation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasswordValidationResponse'
+        '400':
+          description: Invalid password format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /patients/validate/email:
+    post:
+      summary: Validate email availability
+      description: Checks if email is available for registration and valid format
+      operationId: validateEmail
+      tags:
+        - Validation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailValidationRequest'
+      responses:
+        '200':
+          description: Email validation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailValidationResponse'
+        '400':
+          description: Invalid email format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    PatientRegistrationRequest:
+      type: object
+      required:
+        - firstName
+        - lastName
+        - email
+        - dateOfBirth
+        - password
+        - recaptchaToken
+      properties:
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: Patient's first name
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: Patient's last name
+        email:
+          type: string
+          format: email
+          description: Valid email address (RFC 5322)
+        phoneNumber:
+          type: string
+          pattern: '^\+[1-9]\d{1,14}$'
+          description: Phone number in E.164 format
+        dateOfBirth:
+          type: string
+          format: date
+          description: Date of birth (patient must be 18+ years old)
+        password:
+          type: string
+          minLength: 12
+          maxLength: 128
+          description: Strong password meeting security requirements
+        recaptchaToken:
+          type: string
+          description: Google reCAPTCHA v3 token
+
+    PatientRegistrationResponse:
+      type: object
+      properties:
+        patientId:
+          type: string
+          format: uuid
+          description: Unique patient identifier
+        email:
+          type: string
+          format: email
+          description: Registered email address
+        status:
+          type: string
+          enum: [pending_verification]
+          description: Account status
+        verificationEmailSent:
+          type: boolean
+          description: Whether verification email was sent
+        message:
+          type: string
+          description: Success message
+
+    EmailVerificationRequest:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          description: Email verification token from email link
+
+    PasswordResetRequest:
+      type: object
+      required:
+        - email
+        - recaptchaToken
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email address for password reset
+        recaptchaToken:
+          type: string
+          description: Google reCAPTCHA v3 token
+
+    PasswordResetConfirmation:
+      type: object
+      required:
+        - token
+        - newPassword
+      properties:
+        token:
+          type: string
+          description: Password reset token from email
+        newPassword:
+          type: string
+          minLength: 12
+          maxLength: 128
+          description: New strong password
+
+    PasswordValidationRequest:
+      type: object
+      required:
+        - password
+      properties:
+        password:
+          type: string
+          description: Password to validate
+
+    PasswordValidationResponse:
+      type: object
+      properties:
+        valid:
+          type: boolean
+          description: Whether password meets requirements
+        strength:
+          type: string
+          enum: [weak, medium, strong]
+          description: Password strength level
+        requirements:
+          type: object
+          properties:
+            minLength:
+              type: boolean
+            hasUppercase:
+              type: boolean
+            hasLowercase:
+              type: boolean
+            hasDigit:
+              type: boolean
+            hasSpecialChar:
+              type: boolean
+            notCommon:
+              type: boolean
+            notPersonalInfo:
+              type: boolean
+
+    EmailValidationRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email to validate
+
+    EmailValidationResponse:
+      type: object
+      properties:
+        valid:
+          type: boolean
+          description: Whether email is valid and available
+        available:
+          type: boolean
+          description: Whether email is available for registration
+        disposable:
+          type: boolean
+          description: Whether email is from disposable provider
+        message:
+          type: string
+          description: Validation message
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          description: Success message
+        timestamp:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          description: Error type/code
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          description: Additional error details
+        timestamp:
+          type: string
+          format: date-time
+        requestId:
+          type: string
+          description: Request correlation ID
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token for authenticated requests (future use)
+
+### 3. Frontend Setup
+```bash
+cd frontend
+
+# Install dependencies
+npm install
+
+# Configure environment
+cp src/environments/environment.ts.example src/environments/environment.ts
+
+# Edit environment.ts with:
+# - Backend API URL
+# - reCAPTCHA site key
+
+# Start development server
+npm start
+```
+
+### 4. Access Application
+- **Backend API**: http://localhost:8080/api/v1
+- **Frontend**: http://localhost:4200
+- **API Documentation**: http://localhost:8080/swagger-ui.html
+
+## Configuration
+
+### Environment Variables
+
+#### Backend (application.properties)
+```properties
+# Database
+spring.datasource.url=jdbc:sqlite:patient_auth.db
+spring.datasource.driver-class-name=org.sqlite.JDBC
+spring.jpa.database-platform=com.healthcare.patientauth.config.SQLiteDialect
+
+# Security
+app.security.password.encoder.strength=12
+app.security.rate-limit.requests-per-minute=5
+app.security.recaptcha.secret-key=your-recaptcha-secret
+
+# Email (SendGrid)
+app.email.sendgrid.api-key=your-sendgrid-api-key
+app.email.sendgrid.from-email=noreply@yourdomain.com
+app.email.sendgrid.templates.verification=template-id
+app.email.sendgrid.templates.password-reset=template-id
+
+# Server
+server.port=8080
+server.servlet.context-path=/api/v1
+```
+
+#### Frontend (environment.ts)
+```typescript
+export const environment = {
+  production: false,
+  apiUrl: 'http://localhost:8080/api/v1',
+  recaptchaSiteKey: 'your-recaptcha-site-key',
+  features: {
+    enableRegistration: true,
+    enablePasswordReset: true,
+    enableEmailVerification: true
+  }
+};
+```
+
+## Database Setup
+
+### Automatic Migration
+The application uses Flyway for database migrations. On first run, it will:
+1. Create the SQLite database file
+2. Run migration scripts in order
+3. Initialize required data
+
+### Manual Database Operations
+```bash
+# Access SQLite database
+sqlite3 patient_auth.db
+
+# View schema
+.schema
+
+# Check data
+SELECT COUNT(*) FROM patients;
+SELECT * FROM authentication_audit_logs LIMIT 10;
+```
+
+## Testing
+
+### Backend Tests
+```bash
+cd backend
+mvn test                           # Run all tests
+mvn test -Dtest=PatientServiceTest # Run specific test
+mvn jacoco:report                  # Generate coverage report
+```
+
+### Frontend Tests
+```bash
+cd frontend
+npm test                           # Unit tests
+npm run test:ci                    # CI mode
+npm run e2e                        # End-to-end tests
+```
+
+### Full Test Suite
+```bash
+# Run all tests
+./scripts/test.sh
+
+# With coverage reports
+./scripts/test.sh --coverage
+```
+
+## API Usage Examples
+
+### Register New Patient
+```bash
+curl -X POST http://localhost:8080/api/v1/patients/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "john.doe@example.com",
+    "phoneNumber": "+1234567890",
+    "dateOfBirth": "1990-01-01",
+    "password": "SecurePass123!"
+  }'
+```
+
+### Request Password Reset
+```bash
+curl -X POST http://localhost:8080/api/v1/patients/password-reset/request \
+  -H "Content-Type: application/json" \
+  -d '{"email": "john.doe@example.com"}'
+```
+
+### Validate Password Strength
+```bash
+curl -X POST http://localhost:8080/api/v1/patients/validate/password \
+  -H "Content-Type: application/json" \
+  -d '{"password": "MyPassword123!"}'
+```
+
+## Deployment
+
+### Standalone JAR
+```bash
+# Build production JAR
+mvn clean package -DskipTests
+
+# Run JAR
+java -jar target/patient-auth-system-1.0.0.jar \
+  --spring.profiles.active=production \
+  --server.port=8080
+```
+
+### Docker Deployment
+```bash
+# Build images
+docker-compose build
+
+# Start services
+docker-compose up -d
+
+# View logs
+docker-compose logs -f backend
+```
+
+## Monitoring
+
+### Health Checks
+- **Application Health**: http://localhost:8080/api/v1/actuator/health
+- **Metrics**: http://localhost:8080/api/v1/actuator/metrics
+- **Info**: http://localhost:8080/api/v1/actuator/info
+
+### Logs
+```bash
+# Application logs
+tail -f logs/spring.log
+
+# Access logs
+tail -f logs/access.log
+```
+
+## Troubleshooting
+
+### Common Issues
+
+#### Database Connection Failed
+```bash
+# Check SQLite file permissions
+ls -la patient_auth.db
+
+# Recreate database
+rm patient_auth.db
+mvn flyway:migrate
+```
+
+#### Email Not Sending
+```bash
+# Check SendGrid configuration
+curl -H "Authorization: Bearer YOUR_API_KEY" \
+  https://api.sendgrid.com/v3/user/credits
+```
+
+#### reCAPTCHA Errors
+```bash
+# Verify site key
+curl -X POST https://www.google.com/recaptcha/api/siteverify \
+  -d "secret=YOUR_SECRET&response=USER_RESPONSE"
+```
+
+### Debug Mode
+```bash
+# Enable debug logging
+java -jar target/patient-auth-system-1.0.0.jar \
+  --logging.level.com.healthcare.patientauth=DEBUG
+```
+
+## Security Checklist
+
+- [ ] Environment variables configured securely
+- [ ] Database file permissions restricted
+- [ ] SSL/TLS certificates installed
+- [ ] Firewall rules configured
+- [ ] Rate limiting active
+- [ ] Audit logging enabled
+- [ ] Password policies enforced
+
+## Support
+
+### Documentation
+- **API Docs**: http://localhost:8080/swagger-ui.html
+- **User Guide**: docs/user-guide/
+- **Developer Guide**: docs/developer/
+
+### Getting Help
+- Check application logs
+- Review health check endpoints
+- Consult troubleshooting guide
+- Contact development team
+
+## Next Steps
+
+1. Complete user acceptance testing
+2. Configure production environment
+3. Set up monitoring and alerting
+4. Plan for scaling and high availability
+5. Implement backup and disaster recovery</content>
+<parameter name="filePath">c:\Users\Dmytro_Panov\workspace\Projects\AIinSDLC\CopilotTest\spec-kit_demo\java\forget-pass\.specify\patient-registration-password-recovery-quickstart.md
