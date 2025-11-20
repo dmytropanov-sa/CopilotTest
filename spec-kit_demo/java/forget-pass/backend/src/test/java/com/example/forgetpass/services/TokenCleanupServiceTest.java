@@ -36,7 +36,7 @@ class TokenCleanupServiceTest {
         evtExpired.setExpiresAt(Instant.now().minusSeconds(100));
         when(evtRepo.findAll()).thenReturn(List.of(evtGood, evtExpired));
 
-        TokenCleanupService svc = new TokenCleanupService(prtRepo, evtRepo);
+        TokenCleanupService svc = new TokenCleanupService(prtRepo, evtRepo, "0 0 3 * * *");
         svc.cleanupExpiredAndUsedTokens();
 
         verify(prtRepo, times(1)).delete(expired);
