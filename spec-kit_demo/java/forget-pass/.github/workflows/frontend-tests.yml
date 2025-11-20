@@ -1,6 +1,8 @@
 name: Frontend Unit Tests
 
+# Make this workflow reusable from a root workflow
 on:
+  workflow_call: {}
   push:
     branches:
       - 'feature/**'
