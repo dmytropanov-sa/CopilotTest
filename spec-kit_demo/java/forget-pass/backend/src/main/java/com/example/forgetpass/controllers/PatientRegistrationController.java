@@ -22,13 +22,16 @@ public class PatientRegistrationController {
     private final PatientRegistrationService registrationService;
     private final EmailVerificationService emailVerificationService;
     private final AuditService auditService;
+    private final com.example.forgetpass.services.ReCaptchaService reCaptchaService;
 
     public PatientRegistrationController(PatientRegistrationService registrationService,
                                          EmailVerificationService emailVerificationService,
-                                         AuditService auditService) {
+                                         AuditService auditService,
+                                         com.example.forgetpass.services.ReCaptchaService reCaptchaService) {
         this.registrationService = registrationService;
         this.emailVerificationService = emailVerificationService;
         this.auditService = auditService;
+        this.reCaptchaService = reCaptchaService;
     }
 
     public record RegisterRequest(@NotBlank String firstName,
@@ -41,7 +44,14 @@ public class PatientRegistrationController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest req,
                                       @RequestHeader(value = "X-Forwarded-For", required = false) String xff,
-                                      @RequestHeader(value = "User-Agent", required = false) String ua) {
+                                      @RequestHeader(value = "User-Agent", required = false) String ua,
+                                      @RequestHeader(value = "X-ReCaptcha-Token", required = false) String captchaToken) {
+        // require reCAPTCHA validation
+        if (!reCaptchaService.validate(captchaToken == null ? "" : captchaToken, "register")) {
+            auditService.log("registration", null, xff, ua, false,
+                java.util.Map.of("reason", "recaptcha_failed"));
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", "reCAPTCHA validation failed"));
+        }
         try {
             Patient p = registrationService.register(
                 req.firstName(), req.lastName(), req.email(), req.phoneNumber(), req.dateOfBirth(), req.password()
@@ -93,5 +103,10 @@ public class PatientRegistrationController {
                 java.util.Map.of("reason", e.getMessage(), "emailHash", com.example.forgetpass.util.TokenUtil.sha256(req.email())));
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", msg));
         }
+    }
+
+    // Backwards-compatible overload used by existing unit tests
+    public ResponseEntity<?> register(RegisterRequest req, String xff, String ua) {
+        return register(req, xff, ua, null);
     }
 }

@@ -20,7 +20,9 @@ class PatientRegistrationControllerTest {
         PatientRegistrationService registrationService = mock(PatientRegistrationService.class);
         EmailVerificationService emailVerificationService = mock(EmailVerificationService.class);
         AuditService auditService = mock(AuditService.class);
-        PatientRegistrationController controller = new PatientRegistrationController(registrationService, emailVerificationService, auditService);
+        com.example.forgetpass.services.ReCaptchaService reCaptchaService = mock(com.example.forgetpass.services.ReCaptchaService.class);
+        when(reCaptchaService.validate(anyString(), anyString())).thenReturn(true);
+        PatientRegistrationController controller = new PatientRegistrationController(registrationService, emailVerificationService, auditService, reCaptchaService);
 
         Patient p = new Patient();
                 p.setPatientId(java.util.UUID.randomUUID());
@@ -46,7 +48,9 @@ class PatientRegistrationControllerTest {
         PatientRegistrationService registrationService = mock(PatientRegistrationService.class);
         EmailVerificationService emailVerificationService = mock(EmailVerificationService.class);
         AuditService auditService = mock(AuditService.class);
-        PatientRegistrationController controller = new PatientRegistrationController(registrationService, emailVerificationService, auditService);
+        com.example.forgetpass.services.ReCaptchaService reCaptchaService = mock(com.example.forgetpass.services.ReCaptchaService.class);
+        when(reCaptchaService.validate(anyString(), anyString())).thenReturn(true);
+        PatientRegistrationController controller = new PatientRegistrationController(registrationService, emailVerificationService, auditService, reCaptchaService);
 
         when(registrationService.register(anyString(), anyString(), eq("exists@example.com"), anyString(), any(LocalDate.class), anyString()))
                 .thenThrow(new IllegalStateException("email_already_exists"));
@@ -65,7 +69,9 @@ class PatientRegistrationControllerTest {
         PatientRegistrationService registrationService = mock(PatientRegistrationService.class);
         EmailVerificationService emailVerificationService = mock(EmailVerificationService.class);
         AuditService auditService = mock(AuditService.class);
-        PatientRegistrationController controller = new PatientRegistrationController(registrationService, emailVerificationService, auditService);
+        com.example.forgetpass.services.ReCaptchaService reCaptchaService = mock(com.example.forgetpass.services.ReCaptchaService.class);
+        when(reCaptchaService.validate(anyString(), anyString())).thenReturn(true);
+        PatientRegistrationController controller = new PatientRegistrationController(registrationService, emailVerificationService, auditService, reCaptchaService);
 
         when(registrationService.register(anyString(), anyString(), eq("bad@disposable.invalid"), anyString(), any(LocalDate.class), anyString()))
                 .thenThrow(new IllegalArgumentException("invalid_email"));
@@ -84,7 +90,9 @@ class PatientRegistrationControllerTest {
         PatientRegistrationService registrationService = mock(PatientRegistrationService.class);
         EmailVerificationService emailVerificationService = mock(EmailVerificationService.class);
         AuditService auditService = mock(AuditService.class);
-        PatientRegistrationController controller = new PatientRegistrationController(registrationService, emailVerificationService, auditService);
+        com.example.forgetpass.services.ReCaptchaService reCaptchaService = mock(com.example.forgetpass.services.ReCaptchaService.class);
+        when(reCaptchaService.validate(anyString(), anyString())).thenReturn(true);
+        PatientRegistrationController controller = new PatientRegistrationController(registrationService, emailVerificationService, auditService, reCaptchaService);
 
         when(registrationService.register(anyString(), anyString(), eq("teen@example.com"), anyString(), any(LocalDate.class), anyString()))
                 .thenThrow(new IllegalArgumentException("underage"));
@@ -103,7 +111,9 @@ class PatientRegistrationControllerTest {
         PatientRegistrationService registrationService = mock(PatientRegistrationService.class);
         EmailVerificationService emailVerificationService = mock(EmailVerificationService.class);
         AuditService auditService = mock(AuditService.class);
-        PatientRegistrationController controller = new PatientRegistrationController(registrationService, emailVerificationService, auditService);
+        com.example.forgetpass.services.ReCaptchaService reCaptchaService = mock(com.example.forgetpass.services.ReCaptchaService.class);
+        when(reCaptchaService.validate(anyString(), anyString())).thenReturn(true);
+        PatientRegistrationController controller = new PatientRegistrationController(registrationService, emailVerificationService, auditService, reCaptchaService);
 
         when(registrationService.register(anyString(), anyString(), eq("user@example.com"), anyString(), any(LocalDate.class), eq("weak")))
                 .thenThrow(new IllegalArgumentException("weak_password"));
