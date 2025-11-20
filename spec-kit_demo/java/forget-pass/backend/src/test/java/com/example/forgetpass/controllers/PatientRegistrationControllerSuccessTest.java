@@ -1,5 +1,6 @@
 package com.example.forgetpass.controllers;
 
+import com.example.forgetpass.domain.Patient;
 import com.example.forgetpass.services.AuditService;
 import com.example.forgetpass.services.EmailVerificationService;
 import com.example.forgetpass.services.PatientRegistrationService;
@@ -10,12 +11,16 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
- 
+import java.time.LocalDate;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-class PatientRegistrationControllerReCaptchaTest {
+class PatientRegistrationControllerSuccessTest {
 
     MockMvc mockMvc;
     PatientRegistrationService registrationService;
@@ -31,29 +36,35 @@ class PatientRegistrationControllerReCaptchaTest {
         reCaptchaService = mock(ReCaptchaService.class);
 
         PatientRegistrationController controller = new PatientRegistrationController(registrationService, emailVerificationService, auditService, reCaptchaService);
-
         mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
     }
 
     @Test
-    void register_rejects_when_recaptcha_fails() throws Exception {
-        when(reCaptchaService.validate(anyString(), anyString())).thenReturn(false);
+    void register_success_triggersEmailAndAudit() throws Exception {
+        when(reCaptchaService.validate(anyString(), anyString())).thenReturn(true);
+
+        Patient p = new Patient();
+        p.setPatientId(java.util.UUID.randomUUID());
+        p.setEmail("success@example.com");
+        when(registrationService.register(anyString(), anyString(), eq("success@example.com"), anyString(), any(LocalDate.class), anyString()))
+                .thenReturn(p);
 
         String body = "{\n" +
-            "  \"firstName\": \"John\",\n" +
-            "  \"lastName\": \"Doe\",\n" +
-            "  \"email\": \"john.doe@example.com\",\n" +
-            "  \"phoneNumber\": \"12345\",\n" +
+            "  \"firstName\": \"Alice\",\n" +
+            "  \"lastName\": \"Smith\",\n" +
+            "  \"email\": \"success@example.com\",\n" +
+            "  \"phoneNumber\": \"+1 555-9999\",\n" +
             "  \"dateOfBirth\": \"1990-01-01\",\n" +
-            "  \"password\": \"Str0ng!Pass\"\n" +
+            "  \"password\": \"Str0ngP@ss!\"\n" +
             "}";
 
         mockMvc.perform(post("/api/v1/patients/register")
             .contentType(MediaType.APPLICATION_JSON)
-            .header("X-ReCaptcha-Token", "bad-token")
+            .header("X-ReCaptcha-Token", "good-token")
             .content(body))
-            .andExpect(status().isBadRequest());
+            .andExpect(status().isCreated());
 
-        verify(auditService).log(eq("registration"), isNull(), nullable(String.class), nullable(String.class), eq(false), anyMap());
+        verify(emailVerificationService, times(1)).issueVerification(eq(p), anyString());
+        verify(auditService, atLeastOnce()).log(eq("registration"), eq(p), nullable(String.class), nullable(String.class), eq(true), any());
     }
 }
