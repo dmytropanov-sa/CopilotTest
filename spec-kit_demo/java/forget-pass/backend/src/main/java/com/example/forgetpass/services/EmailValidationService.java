@@ -1,5 +1,6 @@
 package com.example.forgetpass.services;
 
+import com.example.forgetpass.util.DisposableEmailChecker;
 import org.springframework.stereotype.Service;
 
 import java.util.Set;
@@ -13,6 +14,7 @@ public class EmailValidationService {
         Pattern.CASE_INSENSITIVE
     );
 
+    // Keep a minimal in-code set; use DisposableEmailChecker for a fuller list
     private static final Set<String> DISPOSABLE_DOMAINS = Set.of(
         "10minutemail.com", "guerrillamail.com", "tempmail.org", "mailinator.com"
     );
@@ -23,9 +25,7 @@ public class EmailValidationService {
 
     public boolean isDisposable(String email) {
         if (email == null) return true;
-        int at = email.lastIndexOf('@');
-        if (at < 0) return true;
-        String domain = email.substring(at + 1).toLowerCase();
-        return DISPOSABLE_DOMAINS.contains(domain);
+        DisposableEmailChecker checker = new DisposableEmailChecker();
+        return checker.isDisposable(email);
     }
 }
