@@ -3,6 +3,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms'
 import { CommonModule } from '@angular/common'
 import { RecaptchaService } from '../services/recaptcha.service'
 import { PasswordStrengthIndicatorComponent } from './password-strength-indicator.component'
+import { passwordPolicyValidator } from '../validators/password.validator'
 
 function passwordValidator(control: any){
   const value = control.value || ''
@@ -39,6 +40,14 @@ function passwordValidator(control: any){
         <span class="text-sm font-medium">Password</span>
         <input formControlName="password" type="password" class="mt-1 block w-full border rounded px-3 py-2" (input)="onPassword()" aria-describedby="pwHelp" />
         <div id="pwHelp" class="text-xs text-red-600" *ngIf="form.controls.password.invalid && form.controls.password.touched">Password does not meet requirements</div>
+        <div class="mt-2 text-xs">
+          <div *ngIf="form.controls.password.errors?.minLength">Minimum 12 characters required</div>
+          <div *ngIf="form.controls.password.errors?.upper">Include at least one uppercase letter</div>
+          <div *ngIf="form.controls.password.errors?.lower">Include at least one lowercase letter</div>
+          <div *ngIf="form.controls.password.errors?.number">Include at least one number</div>
+          <div *ngIf="form.controls.password.errors?.special">Include at least one special character</div>
+          <div *ngIf="form.controls.password.errors?.common">Password is too common</div>
+        </div>
         <app-password-strength-indicator [score]="pwScore"></app-password-strength-indicator>
       </label>
 
@@ -54,7 +63,7 @@ export class RegistrationComponent {
   form = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
     dob: ['', [Validators.required, this.dobValidator]],
-    password: ['', [Validators.required, passwordValidator]]
+    password: ['', [Validators.required, passwordPolicyValidator]]
   })
   pwScore = 0
   message = ''
@@ -78,7 +87,8 @@ export class RegistrationComponent {
     if(/[A-Z]/.test(v)) score++
     if(/[a-z]/.test(v)) score++
     if(/\d/.test(v)) score++
-    if(/[!@#\$%\^&\*]/.test(v)) score++
+    if(/[!@#\$%\^&\*\(\)\-_\+=\[\]{};:'"\\|,.<>\/?`~]/.test(v)) score++
+    // score 0..5 -> map to 0..3
     this.pwScore = Math.min(3, Math.floor(score / 2))
   }
 
