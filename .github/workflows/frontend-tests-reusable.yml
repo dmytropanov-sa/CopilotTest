@@ -51,3 +51,15 @@ jobs:
           path: |
             spec-kit_demo/java/forget-pass/frontend/coverage
             spec-kit_demo/java/forget-pass/frontend/coverage/lcov.info
+
+      - name: Convert lcov to Cobertura XML
+        run: |
+          cd spec-kit_demo/java/forget-pass/frontend || exit 0
+          npm run convert-coverage || true
+
+      - name: Upload Cobertura XML
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-cobertura-xml
+          path: spec-kit_demo/java/forget-pass/frontend/coverage/cobertura-coverage.xml
