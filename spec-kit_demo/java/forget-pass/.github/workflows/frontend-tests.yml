@@ -1,14 +1,8 @@
 name: Frontend Unit Tests
 
-# Make this workflow reusable from a root workflow
+# Reusable workflow only
 on:
   workflow_call: {}
-  push:
-    branches:
-      - 'feature/**'
-  pull_request:
-    branches:
-      - main
 
 defaults:
   run:
@@ -48,4 +42,13 @@ jobs:
         env:
           CI: true
         run: |
-          npx ng test --watch=false --browsers=ChromeHeadless --progress=false
+          npx ng test --watch=false --browsers=ChromeHeadlessNoSandbox --progress=false
+
+      - name: Debug: list coverage directory
+        if: always()
+        run: |
+          echo "-- workspace cwd: $(pwd)" 
+          echo "-- listing frontend folder"
+          ls -la
+          echo "-- listing coverage folder (if exists)"
+          if [ -d coverage ]; then ls -la coverage; echo "-- lcov.info content:"; sed -n '1,200p' coverage/lcov.info || true; else echo "NO_COVERAGE_FOLDER"; fi
