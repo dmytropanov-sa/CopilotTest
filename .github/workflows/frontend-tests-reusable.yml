@@ -42,3 +42,12 @@ jobs:
           CI: true
         run: |
           npx ng test --watch=false --browsers=ChromeHeadlessNoSandbox --progress=false
+
+      - name: Upload frontend coverage artifact (if present)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-coverage
+          path: |
+            spec-kit_demo/java/forget-pass/frontend/coverage
+            spec-kit_demo/java/forget-pass/frontend/coverage/lcov.info
