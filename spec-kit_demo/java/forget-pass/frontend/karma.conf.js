@@ -13,12 +13,13 @@ module.exports = function (config) {
     plugins: [
       require('karma-jasmine'),
       require('karma-chrome-launcher'),
-      require('@angular-devkit/build-angular/plugins/karma')
+      require('@angular-devkit/build-angular/plugins/karma'),
+      require('karma-coverage')
     ],
     client: {
       clearContext: false
     },
-    reporters: ['progress'],
+    reporters: ['progress', 'coverage'],
     port: 9876,
     colors: true,
     logLevel: config.LOG_INFO,
@@ -42,5 +43,13 @@ module.exports = function (config) {
     },
     singleRun: true,
     restartOnFileChange: false
+    ,
+    coverageReporter: {
+      dir: require('path').join(__dirname, 'coverage'),
+      reporters: [
+        { type: 'lcov', subdir: '.' },
+        { type: 'cobertura', subdir: '.', file: 'cobertura-coverage.xml' }
+      ]
+    }
   });
 };
