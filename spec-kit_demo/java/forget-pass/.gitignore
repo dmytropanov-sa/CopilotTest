@@ -26,7 +26,10 @@ frontend/node_modules/
 frontend/dist/
 frontend/.angular/
 frontend/*test*.txt
+frontent/coverage
 
+
+backend/*test*.txt
 # OS files
 .DS_Store
 Thumbs.db
