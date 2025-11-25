@@ -52,3 +52,41 @@ jobs:
           ls -la
           echo "-- listing coverage folder (if exists)"
           if [ -d coverage ]; then ls -la coverage; echo "-- lcov.info content:"; sed -n '1,200p' coverage/lcov.info || true; else echo "NO_COVERAGE_FOLDER"; fi
+
+      - name: Ensure coverage artifacts
+        if: always()
+        run: |
+          set -e
+          # Ensure coverage directory exists
+          if [ ! -d coverage ]; then echo "coverage folder missing"; mkdir -p coverage; fi
+          # If lcov.info is missing, fail explicitly to make it visible in logs
+          if [ ! -f coverage/lcov.info ]; then echo "MISSING: coverage/lcov.info"; fi
+          # If cobertura xml missing but lcov exists, convert using a small Node script
+          if [ ! -f coverage/cobertura-coverage.xml ] && [ -f coverage/lcov.info ]; then
+            echo "Converting lcov -> cobertura"
+            node -e "const fs=require('fs');const lcov=require('lcov-parse');const {XMLBuilder}=require('fast-xml-parser');const data=fs.readFileSync('coverage/lcov.info','utf8'); lcov(data,(err,parsed)=>{if(err){console.error(err);process.exit(1);} const cov={coverage:{packages:{package:[]}}}; parsed.forEach(f=>{ const pkg = { '@_name': (f.file||'').replace(/\//g,'.'), 'classes': { 'class': { '@_name': f.file || '', 'methods': { 'method': [] }, 'lines': { 'line': [] } } } }; if(f.lines && f.lines.details){ f.lines.details.forEach(ld=>{ pkg.classes.class.lines.line.push({'@_num':ld.line,'@_hits':ld.hit}); }); } cov.coverage.packages.package.push(pkg); }); const builder=new XMLBuilder({ignoreAttributes:false, format:true}); fs.writeFileSync('coverage/cobertura-coverage.xml',builder.build(cov)); console.log('WROTE cobertura');});"
+          fi
+
+      - name: Upload coverage lcov
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage-lcov
+          path: |
+            coverage/lcov.info
+
+      - name: Upload coverage cobertura
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage-cobertura
+          path: |
+            coverage/cobertura-coverage.xml
+
+      - name: Upload full coverage folder
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage-folder
+          path: |
+            coverage
