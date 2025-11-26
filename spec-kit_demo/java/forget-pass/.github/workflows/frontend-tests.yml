@@ -90,3 +90,63 @@ jobs:
           name: frontend-coverage-folder
           path: |
             coverage
+
+      # Backend test/coverage steps removed from frontend job
+
+  test-backend:
+    name: Run backend unit tests and coverage
+    runs-on: ubuntu-latest
+    needs: test-frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Run backend Maven tests (generate JaCoCo)
+        run: |
+          echo "Running backend Maven tests to produce JaCoCo reports"
+          mvn -B -f spec-kit_demo/java/forget-pass/backend clean test
+
+      - name: Upload backend jacoco.exec
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-jacoco-exec
+          path: |
+            spec-kit_demo/java/forget-pass/backend/target/jacoco.exec
+
+      - name: Upload backend jacoco site
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-jacoco-site
+          path: |
+            spec-kit_demo/java/forget-pass/backend/target/site/jacoco
+
+      - name: Check backend JaCoCo LINE coverage
+        run: |
+          echo "Checking JaCoCo LINE coverage..."
+          REPORT=spec-kit_demo/java/forget-pass/backend/target/site/jacoco/jacoco.xml
+          if [ ! -f "$REPORT" ]; then
+            echo "Missing jacoco report: $REPORT"
+            exit 1
+          fi
+          READVAL=$(sed -n 's/.*<counter type="LINE" missed="\([0-9]*\)" covered="\([0-9]*\)".*/\1 \2/p' "$REPORT")
+          if [ -z "$READVAL" ]; then
+            echo "Failed to parse LINE counter from $REPORT"
+            exit 1
+          fi
+          read MISS COVERED <<< "$READVAL"
+          TOTAL=$((MISS + COVERED))
+          PCT=$(awk -v c="$COVERED" -v t="$TOTAL" 'BEGIN{ if(t==0) printf "0.00"; else printf "%.2f", c/t*100 }')
+          echo "LINE coverage: ${PCT}% (${COVERED}/${TOTAL})"
+          THRESH=80.0
+          awk -v pct="$PCT" -v thr="$THRESH" 'BEGIN{ if (pct+0 < thr) exit 1; else exit 0 }'
+          if [ $? -ne 0 ]; then
+            echo "Coverage ${PCT}% < threshold ${THRESH}%"
+            exit 1
+          fi
+          echo "Coverage threshold met"
