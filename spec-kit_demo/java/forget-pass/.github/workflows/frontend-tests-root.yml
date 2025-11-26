@@ -1,4 +1,4 @@
-name: Frontend Unit Tests (root trigger)
+name: Root Tests
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
       - main
 
 jobs:
-  call-frontend-tests:
+  root-tests:
     uses: ./java/forget-pass/.github/workflows/frontend-tests.yml
     with: {}
   call-backend-tests:
