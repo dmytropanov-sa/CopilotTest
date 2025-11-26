@@ -1,0 +1,17 @@
+name: Root Tests
+
+on:
+  push:
+    branches:
+      - 'feature/**'
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  root-tests:
+    uses: ./spec-kit_demo/java/forget-pass/.github/workflows/frontend-tests.yml
+    with: {}
+  call-backend-tests:
+    uses: ./spec-kit_demo/java/forget-pass/.github/workflows/backend-tests.yml
+    with: {}
