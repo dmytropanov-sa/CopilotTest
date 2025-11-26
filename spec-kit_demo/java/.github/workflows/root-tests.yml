@@ -9,7 +9,7 @@ on:
       - main
 
 jobs:
-  root-tests:
+  call-frontend-tests:
     uses: ./java/forget-pass/.github/workflows/frontend-tests.yml
     with: {}
   call-backend-tests:
