@@ -10,8 +10,8 @@ on:
 
 jobs:
   call-frontend-tests:
-    uses: ./spec-kit_demo/java/forget-pass/.github/workflows/frontend-tests.yml@feature/add-backend-workflow
+    uses: dmytropanov-sa/CopilotTest/spec-kit_demo/java/forget-pass/.github/workflows/frontend-tests.yml@feature/add-backend-workflow
     with: {}
   call-backend-tests:
-    uses: ./spec-kit_demo/java/forget-pass/.github/workflows/backend-tests.yml@feature/add-backend-workflow
+    uses: dmytropanov-sa/CopilotTest/spec-kit_demo/java/forget-pass/.github/workflows/backend-tests.yml@feature/add-backend-workflow
     with: {}
