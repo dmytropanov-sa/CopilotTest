@@ -88,16 +88,4 @@ jobs:
         with:
           name: frontend-cobertura-xml
           path: spec-kit_demo/java/forget-pass/frontend/coverage/cobertura-coverage.xml
-name: Frontend Unit Tests (reusable - moved)
 
-on:
-  workflow_call: {}
-
-jobs:
-  moved-note:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Inform
-        run: |
-          echo "This reusable workflow has been moved to: spec-kit_demo/java/forget-pass/.github/workflows/frontend-tests-reusable.yml"
-          echo "Please update CI references to the new location."
