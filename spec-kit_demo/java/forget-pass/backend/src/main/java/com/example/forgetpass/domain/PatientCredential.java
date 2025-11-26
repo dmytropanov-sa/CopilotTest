@@ -3,6 +3,10 @@ package com.example.forgetpass.domain;
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.UUID;
+import java.util.ArrayList;
+import java.util.List;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Entity
 @Table(name = "patient_credentials")
@@ -34,6 +38,9 @@ public class PatientCredential {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt = Instant.now();
 
+    @Column(name = "previous_password_hashes")
+    private String previousPasswordHashesJson;
+
     @PrePersist
     public void onCreate() {
         if (credentialId == null) {
@@ -64,4 +71,37 @@ public class PatientCredential {
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
+    public String getPreviousPasswordHashesJson() { return previousPasswordHashesJson; }
+    public void setPreviousPasswordHashesJson(String previousPasswordHashesJson) { this.previousPasswordHashesJson = previousPasswordHashesJson; }
+
+    // JSON-serialized helpers for previous password hashes (most-recent first)
+    public List<String> getPreviousPasswordHashes() {
+        if (previousPasswordHashesJson == null || previousPasswordHashesJson.isBlank()) return new ArrayList<>();
+        try {
+            ObjectMapper om = new ObjectMapper();
+            return om.readValue(previousPasswordHashesJson, new TypeReference<List<String>>(){});
+        } catch (Exception e) {
+            return new ArrayList<>();
+        }
+    }
+
+    public void setPreviousPasswordHashes(List<String> hashes) {
+        try {
+            ObjectMapper om = new ObjectMapper();
+            this.previousPasswordHashesJson = om.writeValueAsString(hashes == null ? new ArrayList<>() : hashes);
+        } catch (Exception e) {
+            this.previousPasswordHashesJson = null;
+        }
+    }
+
+    public void pushPreviousPasswordHash(String hash, int maxHistory) {
+        List<String> list = getPreviousPasswordHashes();
+        if (hash != null && !hash.isBlank()) {
+            list.add(0, hash);
+            if (list.size() > maxHistory) {
+                list = list.subList(0, maxHistory);
+            }
+        }
+        setPreviousPasswordHashes(list);
+    }
 }
