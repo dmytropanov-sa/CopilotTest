@@ -1,90 +1,13 @@
-name: Frontend Unit Tests (reusable)
+name: Frontend Unit Tests (reusable - moved)
 
 on:
   workflow_call: {}
 
-defaults:
-  run:
-    working-directory: spec-kit_demo/java/forget-pass/frontend
-
 jobs:
-  test-frontend:
-    name: Run frontend unit tests
+  moved-note:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: spec-kit_demo/java/forget-pass/frontend/package-lock.json
-
-      - name: Cache frontend node_modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            spec-kit_demo/java/forget-pass/frontend/node_modules
-            spec-kit_demo/java/forget-pass/frontend/.angular/cache
-            ~/.npm
-          key: ${{ runner.os }}-frontend-${{ hashFiles('**/spec-kit_demo/java/forget-pass/frontend/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-frontend-
-
-      - name: Install dependencies
+      - name: Inform
         run: |
-          npm install --legacy-peer-deps --prefer-offline --no-audit --no-fund
-
-      - name: Run unit tests
-        env:
-          CI: true
-        run: |
-          npx ng test --watch=false --browsers=ChromeHeadlessNoSandbox --progress=false
-
-      - name: Upload frontend coverage artifact (if present)
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: frontend-coverage
-          path: |
-            spec-kit_demo/java/forget-pass/frontend/coverage
-            spec-kit_demo/java/forget-pass/frontend/coverage/lcov.info
-
-      - name: Convert lcov to Cobertura XML (inline)
-        if: always()
-        run: |
-          cd spec-kit_demo/java/forget-pass/frontend || exit 0
-          if [ ! -f coverage/lcov.info ]; then echo "No lcov.info found, skipping conversion"; exit 0; fi
-          npx --yes lcov-parse@1.0.0 xmlbuilder@15.0.0 -y >/dev/null 2>&1 || true
-          node -e "
-            const fs=require('fs');
-            const lcovParse=require('lcov-parse');
-            const builder=require('xmlbuilder');
-            lcovParse('coverage/lcov.info', function(err, data){
-              if(err){ console.error(err); process.exit(0); }
-              const xml=builder.create('coverage',{encoding:'utf-8'});
-              xml.att('version','1');
-              const packages=xml.ele('packages');
-              data.forEach(file=>{
-                const pkg=packages.ele('package',{name:file.file||'unknown'});
-                const classes=pkg.ele('classes');
-                const cls=classes.ele('class',{name:file.file,filename:file.file});
-                const lines=cls.ele('lines');
-                (file.lines&&file.lines.details||[]).forEach(ld=>{
-                  lines.ele('line',{number:ld.line, hits:ld.hit});
-                });
-              });
-              fs.mkdirSync('coverage',{recursive:true});
-              fs.writeFileSync('coverage/cobertura-coverage.xml',xml.end({pretty:true}));
-              console.log('Wrote coverage/cobertura-coverage.xml');
-            });
-          "
-
-      - name: Upload Cobertura XML
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: frontend-cobertura-xml
-          path: spec-kit_demo/java/forget-pass/frontend/coverage/cobertura-coverage.xml
+          echo "This reusable workflow has been moved to: spec-kit_demo/java/forget-pass/.github/workflows/frontend-tests-reusable.yml"
+          echo "Please update CI references to the new location."

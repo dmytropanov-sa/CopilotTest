@@ -1,47 +1,5 @@
 name: Frontend Unit Tests
 
-# Reusable workflow to run the Angular frontend unit tests.
-on:
-  workflow_call: {}
-  push:
-    branches:
-      - 'feature/**'
-  pull_request:
-    branches:
-      - main
-
-defaults:
-  run:
-    working-directory: spec-kit_demo/java/forget-pass/frontend
-
-jobs:
-  call-frontend-tests:
-    uses: ./.github/workflows/frontend-tests-reusable.yml
-    with: {}
-
-  upload-backend-coverage:
-    name: Upload backend Jacoco artifacts
-    runs-on: ubuntu-latest
-    needs: call-frontend-tests
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Upload jacoco.exec if present
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: backend-jacoco-exec
-          path: backend/target/jacoco.exec
-
-      - name: Upload Jacoco site if present
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: backend-jacoco-site
-          path: backend/target/site/jacoco
-name: Frontend Unit Tests
-
 # Reusable workflow only
 on:
   workflow_call: {}
@@ -132,8 +90,6 @@ jobs:
           name: frontend-coverage-folder
           path: |
             coverage
-
-      # Backend test/coverage steps removed from frontend job
 
   test-backend:
     name: Run backend unit tests and coverage
