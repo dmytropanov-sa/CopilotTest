@@ -16,7 +16,7 @@ defaults:
 
 jobs:
   call-frontend-tests:
-    uses: ./.github/workflows/frontend-tests-reusable.yml
+    uses: dmytropanov-sa/CopilotTest/spec-kit_demo/java/forget-pass/.github/workflows/frontend-tests-reusable.yml@feature/add-backend-workflow
     with: {}
 
   upload-backend-coverage:
