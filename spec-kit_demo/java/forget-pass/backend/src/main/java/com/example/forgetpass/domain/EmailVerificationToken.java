@@ -31,6 +31,12 @@ public class EmailVerificationToken {
     @Column(name = "resend_count")
     private Integer resendCount = 0;
 
+    @Column(name = "ip_address")
+    private String ipAddress;
+
+    @Column(name = "user_agent")
+    private String userAgent;
+
     @PrePersist
     public void onCreate() {
         if (tokenId == null) {
@@ -53,4 +59,8 @@ public class EmailVerificationToken {
     public void setVerifiedAt(Instant verifiedAt) { this.verifiedAt = verifiedAt; }
     public Integer getResendCount() { return resendCount; }
     public void setResendCount(Integer resendCount) { this.resendCount = resendCount; }
+    public String getIpAddress() { return ipAddress; }
+    public void setIpAddress(String ipAddress) { this.ipAddress = ipAddress; }
+    public String getUserAgent() { return userAgent; }
+    public void setUserAgent(String userAgent) { this.userAgent = userAgent; }
 }

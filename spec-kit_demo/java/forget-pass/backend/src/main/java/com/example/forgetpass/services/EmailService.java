@@ -19,9 +19,9 @@ import java.util.concurrent.TimeUnit;
 public class EmailService {
     private static final Logger log = LoggerFactory.getLogger(EmailService.class);
 
-    private final String apiKey = System.getenv("SENDGRID_API_KEY");
-    private final String fromAddress = System.getenv().getOrDefault("SENDGRID_FROM", "no-reply@forget-pass.local");
-    private final int maxAttempts = 3;
+    protected String apiKey = System.getenv("SENDGRID_API_KEY");
+    private String fromAddress = System.getenv().getOrDefault("SENDGRID_FROM", "no-reply@forget-pass.local");
+    protected int maxAttempts = 3;
 
     public void sendVerificationEmail(String to, String link) {
         String subject = "Verify your account";
@@ -51,7 +51,7 @@ public class EmailService {
         Content plain = new Content("text/plain", content);
         Mail mail = new Mail(from, subject, recipient, plain);
 
-        SendGrid sg = new SendGrid(apiKey);
+        SendGrid sg = createSendGrid(apiKey);
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
                 Request request = new Request();
@@ -73,7 +73,7 @@ public class EmailService {
         log.error("Email delivery ultimately failed after {} attempts: to='{}' subject='{}'", maxAttempts, to, subject);
     }
 
-    private void backoff(int attempt) {
+    protected void backoff(int attempt) {
         long sleepMs = Duration.ofSeconds((long) Math.pow(2, attempt)).toMillis();
         try {
             TimeUnit.MILLISECONDS.sleep(sleepMs);
@@ -85,5 +85,10 @@ public class EmailService {
     private String abbreviate(String s) {
         if (s == null) return "";
         return s.length() > 180 ? s.substring(0, 177) + "..." : s;
+    }
+
+    /** Factory method to create SendGrid client — overridable for tests. */
+    protected SendGrid createSendGrid(String apiKey) {
+        return new SendGrid(apiKey);
     }
 }
